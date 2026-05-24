@@ -2,8 +2,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import confetti from 'canvas-confetti'
-
 import lottie from 'lottie-web'
+import cuteTigerLottie from '../../assets/lottie/Cute Tiger.json'
 
 const router = useRouter()
 
@@ -21,9 +21,9 @@ const isBlinking = ref(false)
 const mouseX = ref(0)
 const mouseY = ref(0)
 
-// Lottie background players
-const lottieBgContainer = ref(null)
-let lottieBgInstance = null
+// Lottie Tiger Mascot state
+const lottieTigerContainer = ref(null)
+let lottieTigerInstance = null
 
 // Pupil tracking calculations
 const usernameLength = computed(() => username.value.length)
@@ -126,7 +126,7 @@ const handleMouseMove = (e) => {
 
 // Sparkle/Blink effect timer
 let blinkInterval
-onMounted(async () => {
+onMounted(() => {
   window.addEventListener('mousemove', handleMouseMove)
   
   // Add full screen layout classes to body and app
@@ -135,24 +135,20 @@ onMounted(async () => {
     app.classList.add('full-screen-layout')
   }
   document.body.classList.add('full-screen-body')
-  
-  // Load local background Lottie animation dynamically at runtime via fetch (bypasses Vite compile check so it never crashes if missing!)
-  try {
-    const response = await fetch('/src/assets/lottie/login-bg.json')
-    if (response.ok) {
-      const data = await response.json()
-      lottieBgInstance = lottie.loadAnimation({
-        container: lottieBgContainer.value,
-        renderer: 'svg',
-        loop: true,
-        autoplay: true,
-        animationData: data
-      })
-    }
-  } catch (e) {
-    console.log("Simpan Lottie background Anda ke src/assets/lottie/login-bg.json untuk mengaktifkan animasi!")
-  }
 
+  // Load static cute tiger animation offline
+  try {
+    lottieTigerInstance = lottie.loadAnimation({
+      container: lottieTigerContainer.value,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      animationData: cuteTigerLottie
+    })
+  } catch (e) {
+    console.warn("Could not load cute tiger background animation")
+  }
+  
   // Owl blinks every 3.5 seconds
   blinkInterval = setInterval(() => {
     isBlinking.value = true
@@ -173,9 +169,9 @@ onUnmounted(() => {
   }
   document.body.classList.remove('full-screen-body')
 
-  // Destroy Lottie background cleanly to save memory
-  if (lottieBgInstance) {
-    lottieBgInstance.destroy()
+  // Destroy Lottie Tiger animation to release memory cleanly
+  if (lottieTigerInstance) {
+    lottieTigerInstance.destroy()
   }
 })
 
@@ -238,40 +234,34 @@ const showHelp = () => {
 
 <template>
   <div class="relative w-full min-height-screen bg-[#fbfaf3] overflow-hidden flex items-center justify-center p-4 select-none font-outfit">
-    <!-- Widescreen Lottie Background Player (Auto-loads login-bg.json when downloaded) -->
-    <div 
-      ref="lottieBgContainer"
-      class="absolute inset-0 pointer-events-none opacity-[0.5] z-0 select-none overflow-hidden"
-    ></div>
-
     <!-- BACKDROP PARALLAX ELEMENTS -->
     <!-- Green bubble (top left) -->
     <div 
-      class="absolute w-[20vw] h-[20vw] max-w-[200px] max-h-[200px] bg-[#7cd0b8] rounded-full opacity-80 filter blur-[1px] transition-transform duration-300 ease-out"
+      class="absolute w-[20vw] h-[20vw] max-w-[200px] max-h-[200px] bg-[#7cd0b8] rounded-full opacity-25 filter blur-[1px] transition-transform duration-300 ease-out"
       :style="{ transform: `translate(${mouseX * -35}px, ${mouseY * -35}px)`, left: '10%', top: '25%' }"
     ></div>
     
     <!-- Yellow bubble (bottom left) -->
     <div 
-      class="absolute w-[18vw] h-[18vw] max-w-[180px] max-h-[180px] bg-[#fbc72b] rounded-full opacity-80 filter blur-[1px] transition-transform duration-300 ease-out"
+      class="absolute w-[18vw] h-[18vw] max-w-[180px] max-h-[180px] bg-[#fbc72b] rounded-full opacity-25 filter blur-[1px] transition-transform duration-300 ease-out"
       :style="{ transform: `translate(${mouseX * -20}px, ${mouseY * -20}px)`, left: '20%', bottom: '8%' }"
     ></div>
     
     <!-- Light Blue bubble (top middle) -->
     <div 
-      class="absolute w-[15vw] h-[15vw] max-w-[150px] max-h-[150px] bg-[#9ad2d8] rounded-full opacity-80 filter blur-[1px] transition-transform duration-300 ease-out"
+      class="absolute w-[15vw] h-[15vw] max-w-[150px] max-h-[150px] bg-[#9ad2d8] rounded-full opacity-25 filter blur-[1px] transition-transform duration-300 ease-out"
       :style="{ transform: `translate(${mouseX * 25}px, ${mouseY * 25}px)`, left: '46%', top: '5%' }"
     ></div>
 
     <!-- Purple bubble (top right) -->
     <div 
-      class="absolute w-[16vw] h-[16vw] max-w-[160px] max-h-[160px] bg-[#b4a6f2] rounded-full opacity-80 filter blur-[1px] transition-transform duration-300 ease-out"
+      class="absolute w-[16vw] h-[16vw] max-w-[160px] max-h-[160px] bg-[#b4a6f2] rounded-full opacity-25 filter blur-[1px] transition-transform duration-300 ease-out"
       :style="{ transform: `translate(${mouseX * -15}px, ${mouseY * -15}px)`, right: '28%', top: '20%' }"
     ></div>
 
     <!-- Orange bubble (right) -->
     <div 
-      class="absolute w-[22vw] h-[22vw] max-w-[220px] max-h-[220px] bg-[#f7945d] rounded-full opacity-80 filter blur-[1px] transition-transform duration-300 ease-out"
+      class="absolute w-[22vw] h-[22vw] max-w-[220px] max-h-[220px] bg-[#f7945d] rounded-full opacity-40 filter blur-[1px] transition-transform duration-300 ease-out"
       :style="{ transform: `translate(${mouseX * 40}px, ${mouseY * 40}px)`, right: '12%', top: '35%' }"
     ></div>
 
@@ -326,6 +316,13 @@ const showHelp = () => {
     >
       <span class="text-3xl filter drop-shadow">🌟</span>
     </div>
+
+    <!-- LOTTIE CUTE TIGER MASCOT (Sticking to bottom-left, behind login card but in front of circles) -->
+    <div 
+      ref="lottieTigerContainer"
+      class="absolute bottom-[-10px] left-[-10px] w-[260px] h-[260px] md:w-[480px] md:h-[480px] pointer-events-none opacity-[0.85] z-0 select-none overflow-hidden transition-transform duration-300 ease-out"
+      :style="{ transform: `translate(${mouseX * 22}px, ${mouseY * 22}px)` }"
+    ></div>
 
     <!-- MAIN LOGIN CARD -->
     <div 
