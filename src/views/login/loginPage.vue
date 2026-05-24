@@ -136,16 +136,19 @@ onMounted(async () => {
   }
   document.body.classList.add('full-screen-body')
   
-  // Load local background Lottie animation dynamically (graceful failure fallback)
+  // Load local background Lottie animation dynamically at runtime via fetch (bypasses Vite compile check so it never crashes if missing!)
   try {
-    const module = await import('../../assets/lottie/login-bg.json')
-    lottieBgInstance = lottie.loadAnimation({
-      container: lottieBgContainer.value,
-      renderer: 'svg',
-      loop: true,
-      autoplay: true,
-      animationData: module.default
-    })
+    const response = await fetch('/src/assets/lottie/login-bg.json')
+    if (response.ok) {
+      const data = await response.json()
+      lottieBgInstance = lottie.loadAnimation({
+        container: lottieBgContainer.value,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        animationData: data
+      })
+    }
   } catch (e) {
     console.log("Simpan Lottie background Anda ke src/assets/lottie/login-bg.json untuk mengaktifkan animasi!")
   }
