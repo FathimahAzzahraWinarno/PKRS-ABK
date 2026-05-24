@@ -3,6 +3,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import confetti from 'canvas-confetti'
 
+import lottie from 'lottie-web'
+
 const router = useRouter()
 
 // Form states
@@ -18,6 +20,10 @@ const isBlinking = ref(false)
 // Parallax background states
 const mouseX = ref(0)
 const mouseY = ref(0)
+
+// Lottie background players
+const lottieBgContainer = ref(null)
+let lottieBgInstance = null
 
 // Pupil tracking calculations
 const usernameLength = computed(() => username.value.length)
@@ -120,7 +126,7 @@ const handleMouseMove = (e) => {
 
 // Sparkle/Blink effect timer
 let blinkInterval
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('mousemove', handleMouseMove)
   
   // Add full screen layout classes to body and app
@@ -130,6 +136,20 @@ onMounted(() => {
   }
   document.body.classList.add('full-screen-body')
   
+  // Load local background Lottie animation dynamically (graceful failure fallback)
+  try {
+    const module = await import('../../assets/lottie/login-bg.json')
+    lottieBgInstance = lottie.loadAnimation({
+      container: lottieBgContainer.value,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      animationData: module.default
+    })
+  } catch (e) {
+    console.log("Simpan Lottie background Anda ke src/assets/lottie/login-bg.json untuk mengaktifkan animasi!")
+  }
+
   // Owl blinks every 3.5 seconds
   blinkInterval = setInterval(() => {
     isBlinking.value = true
@@ -149,6 +169,11 @@ onUnmounted(() => {
     app.classList.remove('full-screen-layout')
   }
   document.body.classList.remove('full-screen-body')
+
+  // Destroy Lottie background cleanly to save memory
+  if (lottieBgInstance) {
+    lottieBgInstance.destroy()
+  }
 })
 
 // Trigger shake animation for validation
@@ -210,6 +235,12 @@ const showHelp = () => {
 
 <template>
   <div class="relative w-full min-height-screen bg-[#fbfaf3] overflow-hidden flex items-center justify-center p-4 select-none font-outfit">
+    <!-- Widescreen Lottie Background Player (Auto-loads login-bg.json when downloaded) -->
+    <div 
+      ref="lottieBgContainer"
+      class="absolute inset-0 pointer-events-none opacity-[0.5] z-0 select-none overflow-hidden"
+    ></div>
+
     <!-- BACKDROP PARALLAX ELEMENTS -->
     <!-- Green bubble (top left) -->
     <div 
