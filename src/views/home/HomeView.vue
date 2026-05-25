@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti'
 import childLottie from '../../assets/lottie/child.json'
 
 const router = useRouter()
+const loggedInUser = ref(JSON.parse(localStorage.getItem('user') || '{}'))
 
 const lottieContainer = ref(null)
 let lottieInstance = null
@@ -41,7 +42,7 @@ onMounted(() => {
       animationData: childLottie
     })
   } catch (e) {
-    console.warn("Could not load local child lottie animation")
+    // Could not load local child lottie animation
   }
   
   // Owl & Avatar blinks every 3.5 seconds
@@ -185,6 +186,10 @@ const handleModuleClick = (e, mod) => {
 
 // Logout action
 const handleLogout = () => {
+  // Clear auth session from local storage
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+
   playPopSound()
   confetti({
     particleCount: 20,
@@ -291,17 +296,21 @@ const handleLogout = () => {
               PKRS-ABK
             </h1>
             <p class="text-xs md:text-sm font-bold text-[#6b7280] font-outfit mt-1">
-              Halo! Ayo belajar bersama 🎉
+              Halo, {{ loggedInUser.nama || loggedInUser.username || 'Teman Hebat' }}! Ayo belajar bersama 🎉
             </p>
           </div>
         </div>
         
-        <!-- Soft Pink Logout Button -->
+        <!-- Premium Styled Logout Button (Same as AdminView) -->
         <button 
-          class="bg-[#ffa1b5] hover:bg-[#ff8fa7] text-white font-extrabold rounded-[18px] px-6 py-2.5 shadow-sm active:scale-95 hover:scale-105 transition-all duration-200 text-sm md:text-base cursor-pointer"
+          class="bg-[#fff5f6] hover:bg-[#ffa1b5] border-2 border-[#ffa1b5] text-[#ff6b8b] hover:text-white font-extrabold rounded-[20px] px-6 py-2.5 shadow-sm active:scale-95 hover:scale-105 transition-all duration-200 text-sm md:text-base cursor-pointer flex items-center gap-2"
           @click="handleLogout"
         >
-          Keluar
+          <!-- Sign-out Exit Icon SVG -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 stroke-current" fill="none" viewBox="0 0 24 24">
+            <path stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+          </svg>
+          <span>Keluar</span>
         </button>
       </div>
 

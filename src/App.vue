@@ -30,9 +30,9 @@ const playPopSound = () => {
 
 <template>
   <div class="app-container select-none min-h-screen bg-[#fbfaf3] font-outfit">
-    <!-- Top child-friendly navbar (Hidden on Login, Home, and custom module pages to show custom headers) -->
+    <!-- Top child-friendly navbar (Hidden on Login, Home, Admin and custom module pages to show custom headers) -->
     <header 
-      v-if="!['/login', '/', '/mengenal-tubuhku', '/makanan-sehat', '/olahraga-aktivitas'].includes(route.path)"
+      v-if="!['/login', '/', '/mengenal-tubuhku', '/makanan-sehat', '/olahraga-aktivitas', '/admin'].includes(route.path)"
       class="max-w-6xl mx-auto px-4 pt-4"
     >
       <nav class="flex items-center justify-between px-6 py-4 bg-white/95 border border-[#e8f6f5] rounded-3xl shadow-lg shadow-[#70d5c9]/5 transition-all duration-300">

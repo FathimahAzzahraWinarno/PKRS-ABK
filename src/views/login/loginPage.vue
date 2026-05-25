@@ -3,13 +3,21 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import confetti from 'canvas-confetti'
 import lottie from 'lottie-web'
+import axios from 'axios'
 import cuteTigerLottie from '../../assets/lottie/Cute Tiger.json'
 
 const router = useRouter()
 
+// Pending modal states
+const isPending = ref(false)
+const pendingMessage = ref('')
+
 // Form states
+const isRegisterMode = ref(false)
+const nama = ref('')
 const username = ref('')
 const password = ref('')
+const isNamaFocused = ref(false)
 const isUsernameFocused = ref(false)
 const isPasswordFocused = ref(false)
 const isExcited = ref(false)
@@ -70,7 +78,7 @@ const playPopSound = () => {
     osc.start()
     osc.stop(ctx.currentTime + 0.12)
   } catch (e) {
-    console.warn("Audio Context not supported or allowed yet.")
+    // Audio Context not supported or allowed yet
   }
 }
 
@@ -146,7 +154,7 @@ onMounted(() => {
       animationData: cuteTigerLottie
     })
   } catch (e) {
-    console.warn("Could not load cute tiger background animation")
+    // Could not load cute tiger background animation
   }
   
   // Owl blinks every 3.5 seconds
@@ -184,51 +192,115 @@ const triggerShake = () => {
   }, 500)
 }
 
-// Submit handler
-const handleLogin = () => {
-  if (!username.value || !password.value) {
-    triggerShake()
-    return
-  }
+// Submit handler (Connect to backend login/register with approval)
+const handleLogin = async () => {
+  if (isRegisterMode.value) {
+    // === ALUR REGISTER ===
+    if (!nama.value || !username.value || !password.value) {
+      triggerShake()
+      return
+    }
 
-  isSuccess.value = true
-  playSuccessSound()
+    try {
+      const response = await axios.post('http://localhost:3000/api/auth/register', {
+        nama: nama.value,
+        username: username.value,
+        password: password.value
+      })
 
-  // Celebrate with Confetti!
-  const duration = 2.5 * 1000
-  const end = Date.now() + duration
+      if (response.data.status === 'pending') {
+        pendingMessage.value = response.data.message
+        isPending.value = true
+        // Clear form fields
+        nama.value = ''
+        username.value = ''
+        password.value = ''
+      }
+    } catch (error) {
+      triggerShake()
+      if (error.response && error.response.data) {
+        alert(error.response.data.message || 'Terjadi kesalahan saat mendaftar, coba lagi ya! 🦉')
+      } else {
+        alert('Gagal terhubung ke server backend PKRS-ABK. Pastikan server sudah aktif! 🔌')
+      }
+    }
+  } else {
+    // === ALUR LOGIN ===
+    if (!username.value || !password.value) {
+      triggerShake()
+      return
+    }
 
-  const frame = () => {
-    confetti({
-      particleCount: 4,
-      angle: 60,
-      spread: 55,
-      origin: { x: 0 },
-      colors: ['#7cd0b8', '#fbc72b', '#b4a6f2', '#f7945d']
-    })
-    confetti({
-      particleCount: 4,
-      angle: 120,
-      spread: 55,
-      origin: { x: 1 },
-      colors: ['#7cd0b8', '#fbc72b', '#b4a6f2', '#f7945d']
-    })
+    try {
+      const response = await axios.post('http://localhost:3000/api/auth/login', {
+        username: username.value,
+        password: password.value
+      })
 
-    if (Date.now() < end) {
-      requestAnimationFrame(frame)
+      if (response.data.status === 'approved') {
+        // Save user session & JWT token
+        localStorage.setItem('token', response.data.token)
+        localStorage.setItem('user', JSON.stringify(response.data.user))
+
+        isSuccess.value = true
+        playSuccessSound()
+
+        // Celebrate with Confetti!
+        const duration = 2.5 * 1000
+        const end = Date.now() + duration
+
+        const frame = () => {
+          confetti({
+            particleCount: 4,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: ['#7cd0b8', '#fbc72b', '#b4a6f2', '#f7945d']
+          })
+          confetti({
+            particleCount: 4,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: ['#7cd0b8', '#fbc72b', '#b4a6f2', '#f7945d']
+          })
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame)
+          }
+        }
+        frame()
+
+        // Redirect based on user role (Admin directly to /admin, User to Home /)
+        setTimeout(() => {
+          if (response.data.user.role === 'superadmin') {
+            router.push('/admin')
+          } else {
+            router.push('/')
+          }
+        }, 2200)
+      } else if (response.data.status === 'pending') {
+        pendingMessage.value = response.data.message
+        isPending.value = true
+      }
+    } catch (error) {
+      triggerShake()
+      if (error.response && error.response.data) {
+        alert(error.response.data.message || 'Terjadi kesalahan, coba lagi ya! 🦉')
+      } else {
+        alert('Gagal terhubung ke server backend PKRS-ABK. Pastikan server sudah aktif! 🔌')
+      }
     }
   }
-  frame()
-
-  // Navigate to home after arpeggio & confetti finish
-  setTimeout(() => {
-    router.push('/')
-  }, 2200)
 }
 
 const showHelp = () => {
   playPopSound()
-  alert("Halo adik-adik! Masukkan nama pengguna dan kata sandimu, lalu tekan tombol warna oranye berlogo roket 🚀 untuk masuk ke dunia petualangan kesehatan tubuh kita!")
+  if (isRegisterMode.value) {
+    alert("Halo adik-adik hebat! Masukkan nama lengkapmu, nama pengguna (username), dan kata sandi yang mudah diingat, lalu tekan tombol 'Daftar Akun' 💫 untuk mendaftar petualangan tubuh kita!")
+  } else {
+    alert("Halo adik-adik! Masukkan nama pengguna dan kata sandimu, lalu tekan tombol warna oranye berlogo roket 🚀 untuk masuk ke dunia petualangan kesehatan tubuh kita!")
+  }
 }
 </script>
 
@@ -324,9 +396,9 @@ const showHelp = () => {
       :style="{ transform: `translate(${mouseX * 22}px, ${mouseY * 22}px)` }"
     ></div>
 
-    <!-- MAIN LOGIN CARD -->
+    <!-- MAIN LOGIN CARD (Glassmorphic) -->
     <div 
-      class="relative w-full max-w-[460px] md:max-w-[520px] bg-white rounded-[36px] md:rounded-[44px] shadow-2xl p-8 md:p-10 flex flex-col items-center border border-[#e8f6f5] z-10 transition-all duration-300"
+      class="relative w-full max-w-[460px] md:max-w-[520px] bg-white/80 backdrop-blur-lg rounded-[36px] md:rounded-[44px] shadow-2xl shadow-[#70d5c9]/5 p-8 md:p-10 flex flex-col items-center border border-white/80 z-10 transition-all duration-300"
       :class="{ 'animate-shake': isShaking, 'scale-102': isExcited, 'translate-y-[-4px]': isExcited }"
     >
       <!-- MASCOT: Custom Interactive SVG Owl -->
@@ -401,12 +473,30 @@ const showHelp = () => {
       <h1 class="text-3xl font-extrabold text-[#f88f57] tracking-wider mb-1 font-outfit uppercase">
         PKRS-ABK
       </h1>
-      <p class="text-sm font-medium text-[#7a7a7a] mb-8 tracking-wide font-outfit">
-        Belajar Tentang Kesehatan Tubuh
+      <p class="text-sm font-medium text-[#7a7a7a] mb-8 tracking-wide font-outfit transition-all duration-300">
+        {{ isRegisterMode ? 'Buat Akun Petualangan Baru ✨' : 'Belajar Tentang Kesehatan Tubuh' }}
       </p>
 
       <!-- FORM FIELDS -->
       <form @submit.prevent="handleLogin" class="w-full flex flex-col gap-5">
+        <!-- Nama Lengkap input (Hanya muncul di register mode) -->
+        <Transition name="fade-slide">
+          <div v-if="isRegisterMode" class="flex flex-col gap-2">
+            <label class="text-[#4b5563] text-sm font-semibold ml-1">
+              Nama Lengkap
+            </label>
+            <input 
+              v-model="nama"
+              type="text" 
+              placeholder="Masukkan nama lengkapmu"
+              class="w-full px-5 py-3.5 text-base border-2 border-[#70d5c9] rounded-[18px] outline-none text-[#374151] font-medium bg-[#fafefa] focus:bg-white focus:ring-4 focus:ring-[#70d5c9]/15 transition-all duration-200"
+              @focus="isNamaFocused = true; isExcited = true; playPopSound()"
+              @blur="isNamaFocused = false; isExcited = false"
+              required
+            />
+          </div>
+        </Transition>
+
         <!-- Username input -->
         <div class="flex flex-col gap-2">
           <label class="text-[#4b5563] text-sm font-semibold ml-1">
@@ -415,7 +505,7 @@ const showHelp = () => {
           <input 
             v-model="username"
             type="text" 
-            placeholder="Masukkan nama"
+            placeholder="Masukkan nama pengguna"
             class="w-full px-5 py-3.5 text-base border-2 border-[#70d5c9] rounded-[18px] outline-none text-[#374151] font-medium bg-[#fafefa] focus:bg-white focus:ring-4 focus:ring-[#70d5c9]/15 transition-all duration-200"
             @focus="isUsernameFocused = true; playPopSound()"
             @blur="isUsernameFocused = false"
@@ -446,8 +536,8 @@ const showHelp = () => {
           @mouseenter="isExcited = true; playPopSound()"
           @mouseleave="isExcited = false"
         >
-          <span>Masuk</span>
-          <span class="text-xl animate-bounce-slow">🚀</span>
+          <span>{{ isRegisterMode ? 'Daftar Akun' : 'Masuk' }}</span>
+          <span class="text-xl animate-bounce-slow">{{ isRegisterMode ? '💫' : '🚀' }}</span>
         </button>
       </form>
 
@@ -465,11 +555,31 @@ const showHelp = () => {
         </p>
       </div>
 
+      <!-- PENDING MODAL STATE -->
+      <div 
+        v-if="isPending"
+        class="absolute inset-0 bg-white/95 rounded-[36px] flex flex-col items-center justify-center p-8 z-20 transition-opacity duration-300"
+      >
+        <span class="text-7xl animate-bounce-slow">⏳</span>
+        <h2 class="text-3xl font-extrabold text-[#f7945d] mt-4 uppercase tracking-wide">
+          Menunggu Admin!
+        </h2>
+        <p class="text-[#6b7280] font-semibold mt-4 text-center px-4 text-sm md:text-base leading-relaxed">
+          {{ pendingMessage }}
+        </p>
+        <button 
+          @click="isPending = false"
+          class="mt-8 px-8 py-3 bg-[#70d5c9] hover:bg-[#5dc1b9] text-white font-bold rounded-full shadow-lg shadow-[#70d5c9]/30 hover:scale-105 active:scale-95 transition-transform duration-200 cursor-pointer"
+        >
+          Tutup 🦉
+        </button>
+      </div>
+
       <!-- FOOTER LINKS -->
       <div class="mt-8 text-center text-xs font-semibold text-[#8a8a8a]">
-        Belum punya akun? 
-        <a href="#" class="text-[#ff8c52] hover:underline" @click.prevent="playPopSound">
-          Daftar di sini
+        {{ isRegisterMode ? 'Sudah punya akun?' : 'Belum punya akun?' }} 
+        <a href="#" class="text-[#ff8c52] hover:underline" @click.prevent="isRegisterMode = !isRegisterMode; playPopSound();">
+          {{ isRegisterMode ? 'Masuk di sini' : 'Daftar di sini' }}
         </a>
       </div>
     </div>
@@ -539,5 +649,15 @@ const showHelp = () => {
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 .font-outfit {
   font-family: 'Outfit', sans-serif;
+}
+/* Fade-slide transition for nama input */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>
