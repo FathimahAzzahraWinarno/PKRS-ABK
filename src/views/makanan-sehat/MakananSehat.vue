@@ -484,8 +484,8 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Sensory Submodule Interactive Pills -->
-        <div class="mb-8">
+        <!-- Sensory Submodule Interactive Pills (Disembunyikan sementara sesuai permintaan) -->
+        <div v-if="false" class="mb-8">
           <h3 class="text-lg font-extrabold text-gray-800 mb-4 flex items-center gap-2">
             <span>✨</span> Sentuh kelompok makanan di bawah untuk mendengarkan manfaatnya:
           </h3>

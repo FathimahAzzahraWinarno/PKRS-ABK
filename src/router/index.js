@@ -39,24 +39,34 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const isValidToken = token && token !== 'null' && token !== 'undefined'
 
-  // 1. Jika rute adalah /admin (khusus superadmin)
-  if (to.name === 'admin') {
-    if (!token) {
+  let user = {}
+  try {
+    const userStr = localStorage.getItem('user')
+    if (userStr && userStr !== 'null' && userStr !== 'undefined') {
+      user = JSON.parse(userStr)
+    }
+  } catch (error) {
+    user = {}
+  }
+
+  // 1. Jika mencoba mengakses halaman admin (/admin)
+  if (to.path.startsWith('/admin') || to.name === 'admin') {
+    if (!isValidToken) {
       next({ name: 'login' })
     } else if (user.role !== 'superadmin') {
-      next({ name: 'home' }) // Kembalikan ke beranda jika bukan superadmin
+      next({ name: 'home' })
     } else {
       next()
     }
   }
   // 2. Mencegah akses ke halaman selain login jika token tidak ditemukan
-  else if (to.name !== 'login' && !token) {
+  else if (to.path !== '/login' && to.name !== 'login' && !isValidToken) {
     next({ name: 'login' })
   } 
   // 3. Jika sudah login tapi ingin ke halaman login lagi, arahkan ke home
-  else if (to.name === 'login' && token) {
+  else if ((to.path === '/login' || to.name === 'login') && isValidToken) {
     next({ name: 'home' })
   } 
   else {

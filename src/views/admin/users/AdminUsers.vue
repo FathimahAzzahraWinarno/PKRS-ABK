@@ -148,7 +148,7 @@ const onResetPasswordClick = (userId, username) => {
               <th class="pb-3 pl-2">Nama Lengkap</th>
               <th class="pb-3">Nama Pengguna</th>
               <th class="pb-3">Tanggal Mendaftar</th>
-              <th class="pb-3 text-center pr-2">Tindakan</th>
+              <th class="pb-3 text-center pr-2">Aksi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[#fafefa] text-sm text-[#374151]">
@@ -161,18 +161,18 @@ const onResetPasswordClick = (userId, username) => {
               <td class="py-4 font-semibold text-[#8a8a8a] lowercase">@{{ user.username }}</td>
               <td class="py-4 font-semibold text-[#9ca3af] text-xs">{{ formatDate(user.created_at) }}</td>
               <td class="py-4">
-                <div class="flex items-center justify-center gap-2.5">
+                <div class="flex items-center justify-center gap-2">
                   <button 
                     @click="emit('reject', user.id, user.nama || user.username)"
-                    class="px-4 py-2 border-2 border-[#ffa1b5] text-[#ff6b8b] hover:bg-[#fff5f6] font-extrabold rounded-[14px] text-xs active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                    class="px-4 py-2 border-2 border-[#ffa1b5]/60 hover:bg-[#fff5f6] text-[#ff6b8b] font-bold rounded-[12px] text-xs active:scale-95 transition-all cursor-pointer"
                   >
-                    ❌ Tolak
+                    Tolak
                   </button>
                   <button 
                     @click="emit('approve', user.id, user.nama || user.username)"
-                    class="px-4 py-2 bg-[#70d5c9] hover:bg-[#5dc1b9] text-white font-extrabold rounded-[14px] text-xs shadow-md shadow-[#70d5c9]/25 hover:shadow-lg active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                    class="px-4 py-2 bg-[#70d5c9] hover:bg-[#5dc1b9] text-white font-bold rounded-[12px] text-xs shadow-md shadow-[#70d5c9]/15 active:scale-95 transition-all cursor-pointer"
                   >
-                    ✅ Setujui
+                    Setujui
                   </button>
                 </div>
               </td>
