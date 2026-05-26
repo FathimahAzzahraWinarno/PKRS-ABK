@@ -1,9 +1,11 @@
 import pool from './db.js'
 import bcrypt from 'bcryptjs'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const initDb = async () => {
   try {
-    // 1. Buat tabel users jika belum ada (Drop dahulu agar schema bersih)
     await pool.query(`
       DROP TABLE IF EXISTS users CASCADE;
       CREATE TABLE users (
@@ -17,13 +19,21 @@ const initDb = async () => {
       );
     `)
 
-    // 2. Generate password hash untuk admin default
-    const adminUsername = 'admin'
-    const adminPasswordRaw = 'admin123'
-    
-    // Cek apakah admin sudah terdaftar
-    const checkAdmin = await pool.query('SELECT * FROM users WHERE username = $1', [adminUsername])
-    
+    console.log('Tabel users berhasil dibuat.')
+
+    const adminUsername = process.env.ADMIN_USERNAME
+    const adminPasswordRaw = process.env.ADMIN_PASSWORD
+
+    if (!adminUsername || !adminPasswordRaw) {
+      console.error('ERROR: ADMIN_USERNAME dan ADMIN_PASSWORD wajib diisi di file .env!')
+      process.exit(1)
+    }
+
+    const checkAdmin = await pool.query(
+      'SELECT id FROM users WHERE username = $1',
+      [adminUsername]
+    )
+
     if (checkAdmin.rows.length === 0) {
       const salt = await bcrypt.genSalt(10)
       const hashedPassword = await bcrypt.hash(adminPasswordRaw, salt)
@@ -36,6 +46,7 @@ const initDb = async () => {
 
     process.exit(0)
   } catch (error) {
+    console.error('Seed gagal:', error.message)
     process.exit(1)
   }
 }

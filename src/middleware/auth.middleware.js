@@ -8,7 +8,7 @@ export const verifyToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1] // Bearer <token>
 
   if (!token) {
-    return res.status(401).json({ message: 'Akses ditolak. Token tidak ditemukan! 🔐' })
+    return res.status(401).json({ message: 'Akses ditolak. Token tidak ditemukan!' })
   }
 
   try {
@@ -17,6 +17,6 @@ export const verifyToken = (req, res, next) => {
     next()
   } catch (error) {
     console.error('JWT Verification Error:', error.message)
-    return res.status(403).json({ message: 'Token tidak valid atau sudah kadaluwarsa! 🦉' })
+    return res.status(403).json({ message: 'Token tidak valid atau sudah kadaluwarsa!' })
   }
 }
