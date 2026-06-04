@@ -51,7 +51,6 @@ router.beforeEach((to, from, next) => {
     user = {}
   }
 
-  // 1. Jika mencoba mengakses halaman admin (/admin)
   if (to.path.startsWith('/admin') || to.name === 'admin') {
     if (!isValidToken) {
       next({ name: 'login' })
@@ -61,11 +60,9 @@ router.beforeEach((to, from, next) => {
       next()
     }
   }
-  // 2. Mencegah akses ke halaman selain login jika token tidak ditemukan
   else if (to.path !== '/login' && to.name !== 'login' && !isValidToken) {
     next({ name: 'login' })
   } 
-  // 3. Jika sudah login tapi ingin ke halaman login lagi, arahkan ke home
   else if ((to.path === '/login' || to.name === 'login') && isValidToken) {
     next({ name: 'home' })
   } 

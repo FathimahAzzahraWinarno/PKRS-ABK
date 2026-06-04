@@ -5,16 +5,25 @@ import confetti from 'canvas-confetti'
 
 const router = useRouter()
 
-// UI state variables
-const currentPhase = ref('learning') // 'learning' | 'quiz-intro' | 'quiz' | 'celebration'
+const currentPhase = ref('learning')
+const selectedModule = ref({
+  id: 'd1',
+  code: 'MODUL D1',
+  title: 'Tubuhku Luar Biasa',
+  subtext: 'Video + 5 soal kuis · ±4 menit',
+  icon: '💪',
+  borderColor: 'border-[#a7f3d0]',
+  bgColor: 'bg-[#f0fdf4]',
+  iconColor: 'bg-[#d1fae5] text-[#10b981]',
+  textColor: 'text-[#10b981]',
+  accentColor: '#5dc1b9',
+  videoUrl: 'https://www.youtube.com/embed/g72D_1vLg6Y'
+})
 const isVideoPlaying = ref(false)
 const activeFactIndex = ref(0)
 const isBlinking = ref(false)
-
-// Voice speaking status
 const isSpeaking = ref(false)
 
-// Sound triggers using Web Audio API procedural synthesis
 const playPopSound = () => {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)()
@@ -22,14 +31,11 @@ const playPopSound = () => {
     const gain = ctx.createGain()
     osc.connect(gain)
     gain.connect(ctx.destination)
-    
     osc.type = 'sine'
     osc.frequency.setValueAtTime(450, ctx.currentTime)
     osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.08)
-    
     gain.gain.setValueAtTime(0.12, ctx.currentTime)
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08)
-    
     osc.start()
     osc.stop(ctx.currentTime + 0.08)
   } catch (e) {}
@@ -42,21 +48,17 @@ const playNote = (freq, type = 'sine', duration = 0.3) => {
     const gain = ctx.createGain()
     osc.connect(gain)
     gain.connect(ctx.destination)
-    
     osc.type = type
     osc.frequency.setValueAtTime(freq, ctx.currentTime)
-    
     gain.gain.setValueAtTime(0.15, ctx.currentTime)
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration)
-    
     osc.start()
     osc.stop(ctx.currentTime + duration)
   } catch (e) {}
 }
 
-// Correct answer sweep
 const playCorrectSound = () => {
-  const notes = [392.00, 523.25, 659.25, 783.99] // G4 - C5 - E5 - G5 (bright athletic chime)
+  const notes = [392.00, 523.25, 659.25, 783.99]
   notes.forEach((freq, idx) => {
     setTimeout(() => {
       playNote(freq, 'sine', 0.4)
@@ -64,7 +66,6 @@ const playCorrectSound = () => {
   })
 }
 
-// Incorrect low buzzer slide
 const playIncorrectSound = () => {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)()
@@ -72,22 +73,18 @@ const playIncorrectSound = () => {
     const gain = ctx.createGain()
     osc.connect(gain)
     gain.connect(ctx.destination)
-    
     osc.type = 'triangle'
     osc.frequency.setValueAtTime(140, ctx.currentTime)
     osc.frequency.linearRampToValueAtTime(90, ctx.currentTime + 0.4)
-    
     gain.gain.setValueAtTime(0.2, ctx.currentTime)
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
-    
     osc.start()
     osc.stop(ctx.currentTime + 0.4)
   } catch (e) {}
 }
 
-// Victory chords
 const playVictorySound = () => {
-  const notes = [392.00, 523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98] // G4 arpeggio up to G6
+  const notes = [392.00, 523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]
   notes.forEach((freq, idx) => {
     setTimeout(() => {
       playNote(freq, 'sine', 0.5)
@@ -95,156 +92,86 @@ const playVictorySound = () => {
   })
 }
 
-// Interactive Facts Configuration
-const facts = ref([
-  {
-    title: 'Lari 🏃‍♂️',
-    subtitle: 'Berlari untuk Jantung Kuat',
-    description: 'Berlari dan berjalan santai sangat baik untuk melatih otot kaki kita. Berlari teratur melatih kerja jantung kita agar memompa darah dengan sehat, kuat, dan penuh semangat!',
-    voiceText: 'Berlari santai melatih otot kaki kita dan membuat jantung kita berdetak sehat dan kuat!',
-    colorClass: 'border-[#92cbd6] bg-[#eef8fa] text-[#2c7d8f]',
-    activeBg: 'bg-[#92cbd6]/20 shadow-lg shadow-[#92cbd6]/10',
-    icon: '🏃‍♂️',
-    accentColor: '#92cbd6'
-  },
-  {
-    title: 'Senam 🤸‍♀️',
-    subtitle: 'Senam Pagi yang Lentur',
-    description: 'Senam gembira dan peregangan tubuh setiap pagi membantu melenturkan otot dan persendian kita. Senam membuat kita lincah bergerak bebas dan terhindar dari rasa kaku!',
-    voiceText: 'Senam gembira melatih otot tubuh agar lentur, lincah bergerak bebas, dan penuh semangat!',
-    colorClass: 'border-[#ffa1b5] bg-[#fff0f3] text-[#e04f6e]',
-    activeBg: 'bg-[#ffa1b5]/20 shadow-lg shadow-[#ffa1b5]/10',
-    icon: '🤸‍♀️',
-    accentColor: '#ffa1b5'
-  },
-  {
-    title: 'Main Bola ⚽',
-    subtitle: 'Bermain Bola Bersama',
-    description: 'Bermain sepak bola bersama teman-teman melatih ketangkasan kaki dan kelincahan berlari. Bermain bola juga mengajarkan kita indahnya bekerja sama di dalam tim!',
-    voiceText: 'Bermain sepak bola bersama teman melatih kelincahan berlari dan kerja sama tim yang kompak!',
-    colorClass: 'border-[#5dc1b9] bg-[#ebf9f8] text-[#2b8a82]',
-    activeBg: 'bg-[#5dc1b9]/20 shadow-lg shadow-[#5dc1b9]/10',
-    icon: '⚽',
-    accentColor: '#5dc1b9'
-  },
-  {
-    title: 'Tidur 😴',
-    subtitle: 'Tidur Cukup untuk Pemulihan',
-    description: 'Tidur nyenyak yang cukup setiap malam memulihkan kembali seluruh energi tubuh. Istirahat sangat penting agar keesokan hari badan kita kembali segar, sehat, dan siap bermain lagi!',
-    voiceText: 'Tidur malam yang cukup memulihkan kembali energi tubuh agar besok pagi kembali segar bugar!',
-    colorClass: 'border-[#f7945d] bg-[#fff5f0] text-[#c45a1f]',
-    activeBg: 'bg-[#f7945d]/20 shadow-lg shadow-[#f7945d]/10',
-    icon: '😴',
-    accentColor: '#f7945d'
-  }
-])
-
-// Speech Synthesis Facts integration
-const speakFact = (text) => {
-  if ('speechSynthesis' in window) {
-    isSpeaking.value = true
-    window.speechSynthesis.cancel() // Stop any previous speech
-    const utterance = new SpeechSynthesisUtterance(text)
-    
-    // Attempt to select Indonesian accent speaker
-    const voices = window.speechSynthesis.getVoices()
-    const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'))
-    if (idVoice) {
-      utterance.voice = idVoice
-    }
-    
-    utterance.pitch = 1.35 // Higher cheerful kid voice pitch
-    utterance.rate = 0.9 // Slower for clarity
-    
-    utterance.onend = () => {
-      isSpeaking.value = false
-    }
-    utterance.onerror = () => {
-      isSpeaking.value = false
-    }
-    
-    window.speechSynthesis.speak(utterance)
-  }
-}
-
-const handleFactClick = (idx) => {
-  playPopSound()
-  activeFactIndex.value = idx
-  speakFact(facts.value[idx].voiceText)
-  
-  // Custom tiny local confetti burst
-  confetti({
-    particleCount: 8,
-    spread: 45,
-    colors: [facts.value[idx].accentColor, '#ffffff']
-  })
-}
-
-// 5-Question Quiz Configuration
 const questions = ref([
   {
     id: 1,
-    question: "Mengapa kita perlu berolahraga secara teratur setiap hari? 🏃‍♂️",
+    tag: 'PILIHAN GANDA',
+    visualEmoji: '🔒 🧡',
+    visualDescription: 'Siluet tubuh dengan warna biru (bagian umum) dan oranye+gembok (bagian privat)',
+    question: 'Bagian tubuh mana yang disebut BAGIAN PRIVAT?',
     options: [
-      { key: 'A', text: 'Supaya badan kita terasa lemas dan pusing' },
-      { key: 'B', text: 'Supaya tubuh selalu sehat, kuat, dan ceria' },
-      { key: 'C', text: 'Supaya kita mudah terkena kuman penyakit' },
-      { key: 'D', text: 'Agar badan kita menjadi malas bergerak' }
+      { key: 'A', text: 'Tangan dan kaki' },
+      { key: 'B', text: 'Wajah dan rambut' },
+      { key: 'C', text: 'Bagian yang tertutup pakaian dalam' },
+      { key: 'D', text: 'Telinga dan hidung' }
     ],
-    correct: 'B',
-    explanation: 'Hebat sekali! Olahraga teratur membuat otot dan jantung kita selalu sehat, kuat, bugar, dan penuh ceria! 🏃‍♂️🌟'
+    correct: 'C',
+    explanation: 'Bagian privat adalah bagian tubuh yang tertutup oleh pakaian dalam dan tidak boleh dilihat atau disentuh oleh orang lain sembarangan. 🔒'
   },
   {
     id: 2,
-    question: "Olahraga apa yang dilakukan dengan menendang bola ke gawang lawan bersama tim teman-teman? ⚽",
+    tag: 'BENAR / SALAH',
+    visualEmoji: '📏 🌱 ✓',
+    visualDescription: 'Siluet anak sebelum dan sesudah pubertas dengan tanda besar "NORMAL!"',
+    question: 'Benar atau salah: "Perubahan tubuh saat pubertas (seperti tumbuhnya rambut baru, suara berubah, atau haid) adalah hal yang normal."',
     options: [
-      { key: 'A', text: 'Bermain papan catur' },
-      { key: 'B', text: 'Bermain sepak bola' },
-      { key: 'C', text: 'Membaca buku komik' },
-      { key: 'D', text: 'Tidur siang nyenyak' }
+      { key: 'A', text: 'BENAR' },
+      { key: 'B', text: 'SALAH' }
     ],
-    correct: 'B',
-    explanation: 'Keren! Sepak bola melatih ketangkasan kaki kita, kelincahan berlari, dan kerja sama tim yang kompak! ⚽'
+    correct: 'A',
+    explanation: 'Pubertas adalah proses alami dan normal. Tidak perlu malu atau takut. Tubuh berubah untuk tumbuh menjadi dewasa. 📏🌱'
   },
   {
     id: 3,
-    question: "Apa manfaat penting melakukan gerakan senam atau peregangan tubuh saat pagi hari? 🤸‍♀️",
+    tag: 'PILIHAN GANDA',
+    visualEmoji: '🏷️ 🧬',
+    visualDescription: 'Nama yang benar untuk bagian tubuh perempuan yang digunakan buang air kecil',
+    question: 'Apa nama yang BENAR untuk bagian tubuh yang digunakan untuk buang air kecil pada anak perempuan?',
     options: [
-      { key: 'A', text: 'Membuat badan kita kaku dan pegal' },
-      { key: 'B', text: 'Melatih kelenturan tubuh agar lincah bergerak' },
-      { key: 'C', text: 'Membuat kita cepat mengantuk kembali' },
-      { key: 'D', text: 'Supaya tubuh kita merasa lelah berlebih' }
+      { key: 'A', text: 'Bagian bawah' },
+      { key: 'B', text: 'Vagina' },
+      { key: 'C', text: 'Tempat rahasia' },
+      { key: 'D', text: 'Bagian itu' }
     ],
     correct: 'B',
-    explanation: 'Bagus! Senam pagi membuat sendi-sendi kita lentur, tubuh terasa segar, lincah, dan penuh semangat! 🤸‍♀️✨'
+    explanation: 'Penting tahu nama yang benar dari bagian tubuh. Nama yang benar untuk alat kelamin perempuan adalah vagina. 🏷️'
   },
   {
     id: 4,
-    question: "Setelah seharian aktif belajar, bermain, dan berolahraga, apa yang harus kita lakukan malam hari? 😴",
+    tag: 'SKENARIO SITUASI',
+    visualEmoji: '😰 🩸',
+    visualDescription: 'Ana terkejut melihat bercak darah di celananya dan merasa takut',
+    question: 'Ana mendapati ada bercak darah di celananya dan merasa takut. Apa yang sebaiknya Ana lakukan?',
     options: [
-      { key: 'A', text: 'Tidur nyenyak yang cukup untuk istirahat' },
-      { key: 'B', text: 'Menonton layar HP hingga larut malam' },
-      { key: 'C', text: 'Bermain game online sampai pagi hari' },
-      { key: 'D', text: 'Minum minuman bersoda dingin' }
+      { key: 'A', text: 'Diam saja dan menyembunyikannya' },
+      { key: 'B', text: 'Menangis sendirian dan tidak cerita' },
+      { key: 'C', text: 'Segera cerita ke ibu atau guru perempuan yang dipercaya' },
+      { key: 'D', text: 'Marah-marah kepada temannya' }
     ],
-    correct: 'A',
-    explanation: 'Sempurna! Tidur malam yang cukup memulihkan seluruh tenaga tubuh agar besok pagi kembali segar bugar! 😴🌙'
+    correct: 'C',
+    explanation: 'Menstruasi atau haid pertama adalah hal yang normal bagi anak perempuan yang mulai dewasa. Segera ceritakan kepada ibu atau guru perempuan agar dibantu memakai pembalut. 🩸💖'
   },
   {
     id: 5,
-    question: "Sebelum mulai berolahraga berat, gerakan apa yang wajib kita lakukan agar otot tidak cedera? 🧘‍♀️",
+    tag: 'BENAR / SALAH',
+    visualEmoji: '😊 🚿',
+    visualDescription: 'Anak bersembunyi malu (salah) vs. anak merawat diri dengan senyum (benar)',
+    question: 'Benar atau salah: "Perubahan saat pubertas seperti jerawat atau bau badan adalah sesuatu yang memalukan dan harus disembunyikan."',
     options: [
-      { key: 'A', text: 'Langsung tertidur pulas' },
-      { key: 'B', text: 'Melakukan gerakan pemanasan ringan' },
-      { key: 'C', text: 'Makan makanan pedas manis' },
-      { key: 'D', text: 'Minum banyak sekali air es' }
+      { key: 'A', text: 'BENAR' },
+      { key: 'B', text: 'SALAH' }
     ],
     correct: 'B',
-    explanation: 'Luar biasa cerdas! Gerakan pemanasan ringan melenturkan otot kita agar siap dan aman untuk berolahraga! 🧘‍♀️💪'
+    explanation: 'Perubahan fisik seperti jerawat atau bau badan saat pubertas adalah hal yang wajar. Kita hanya perlu rajin merawat kebersihan tubuh seperti mandi dengan sabun dan cuci muka. 🧼🚿'
   }
 ])
 
-// Active Quiz state variables
+const getYoutubeId = (url) => {
+  if (!url) return ''
+  const parts = url.split('/')
+  return parts[parts.length - 1]
+}
+
 const currentQuestionIndex = ref(0)
 const selectedOption = ref(null)
 const isAnswered = ref(false)
@@ -252,18 +179,14 @@ const isCorrect = ref(null)
 const score = ref(0)
 
 const handleOptionSelect = (key, e) => {
-  if (isAnswered.value) return // Prevents selecting twice
-  
+  if (isAnswered.value) return
   selectedOption.value = key
   isAnswered.value = true
-  
   const currentQuestion = questions.value[currentQuestionIndex.value]
   if (key === currentQuestion.correct) {
     isCorrect.value = true
     score.value++
     playCorrectSound()
-    
-    // Interactive local confetti burst from click
     const rect = e.target.getBoundingClientRect()
     const x = (rect.left + rect.width / 2) / window.innerWidth
     const y = (rect.top + rect.height / 2) / window.innerHeight
@@ -287,18 +210,15 @@ const handleNextQuestion = () => {
     isAnswered.value = false
     isCorrect.value = null
   } else {
-    // End Quiz and transition to celebration
     currentPhase.value = 'celebration'
     triggerCelebration()
   }
 }
 
-// Celebration details
 const starAnimations = ref([false, false, false])
 const computedStars = ref(0)
 
 const triggerCelebration = () => {
-  // Determine stars count
   if (score.value === 5) {
     computedStars.value = 3
   } else if (score.value >= 3) {
@@ -308,11 +228,8 @@ const triggerCelebration = () => {
   } else {
     computedStars.value = 0
   }
-  
   playVictorySound()
   triggerMassiveConfetti()
-  
-  // Staggered star pops with pop synth notes
   starAnimations.value = [false, false, false]
   for (let i = 0; i < computedStars.value; i++) {
     setTimeout(() => {
@@ -325,23 +242,21 @@ const triggerCelebration = () => {
 const triggerMassiveConfetti = () => {
   const duration = 2.5 * 1000
   const end = Date.now() + duration
-  
   ;(function frame() {
     confetti({
       particleCount: 4,
       angle: 60,
       spread: 50,
       origin: { x: 0, y: 0.8 },
-      colors: ['#92cbd6', '#b5e3eb', '#ffa1b5', '#ffd3ba']
+      colors: ['#a7f3d0', '#d1fae5', '#ffa1b5', '#ffd3ba']
     })
     confetti({
       particleCount: 4,
       angle: 120,
       spread: 50,
       origin: { x: 1, y: 0.8 },
-      colors: ['#92cbd6', '#b5e3eb', '#ffa1b5', '#ffd3ba']
+      colors: ['#a7f3d0', '#d1fae5', '#ffa1b5', '#ffd3ba']
     })
-    
     if (Date.now() < end) {
       requestAnimationFrame(frame)
     }
@@ -349,6 +264,14 @@ const triggerMassiveConfetti = () => {
 }
 
 const restartModule = () => {
+  playPopSound()
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel()
+  }
+  router.push('/')
+}
+
+const restartQuiz = () => {
   playPopSound()
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel()
@@ -362,45 +285,34 @@ const restartModule = () => {
   score.value = 0
 }
 
-// Mascot blinking interval
 let blinkInterval
 onMounted(() => {
-  // Force full screen overrides
   const app = document.getElementById('app')
   if (app) {
     app.classList.add('full-screen-layout')
   }
   document.body.classList.add('full-screen-body')
-  
-  // Pre-load Web Speech synthesizers API
   if ('speechSynthesis' in window) {
     window.speechSynthesis.getVoices()
   }
-  
-  // Mascot blink trigger every 3.8s
   blinkInterval = setInterval(() => {
     isBlinking.value = true
     setTimeout(() => {
       isBlinking.value = false
     }, 150)
   }, 3800)
-  
-  // Play initial chime
   setTimeout(() => {
-    playNote(783.99, 'sine', 0.5) // G5 chime
+    playNote(783.99, 'sine', 0.5)
   }, 100)
 })
 
 onUnmounted(() => {
-  // Clear overrides
   const app = document.getElementById('app')
   if (app) {
     app.classList.remove('full-screen-layout')
   }
   document.body.classList.remove('full-screen-body')
-  
   clearInterval(blinkInterval)
-  
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel()
   }
@@ -409,19 +321,14 @@ onUnmounted(() => {
 
 <template>
   <div class="relative w-full py-6 px-4 overflow-hidden select-none min-h-screen bg-[#fbfaf3] font-outfit">
-    <!-- DECORATIVE BACKGROUND BALLS -->
-    <div class="absolute w-36 h-36 bg-[#92cbd6] opacity-15 filter blur-[3px] pointer-events-none" style="left: -20px; top: 120px;"></div>
-    <div class="absolute w-44 h-44 bg-[#b5e3eb] opacity-15 filter blur-[3px] pointer-events-none" style="right: -40px; top: 300px;"></div>
-    <div class="absolute w-40 h-40 bg-[#ffa1b5] opacity-15 filter blur-[3px] pointer-events-none" style="left: 10%; bottom: -50px;"></div>
+    <div class="absolute w-36 h-36 bg-[#a7f3d0] rounded-full opacity-15 filter blur-[3px] pointer-events-none" style="left: -20px; top: 120px;"></div>
+    <div class="absolute w-44 h-44 bg-[#d1fae5] rounded-full opacity-15 filter blur-[3px] pointer-events-none" style="right: -40px; top: 300px;"></div>
+    <div class="absolute w-40 h-40 bg-[#ffa1b5] rounded-full opacity-15 filter blur-[3px] pointer-events-none" style="left: 10%; bottom: -50px;"></div>
 
     <div class="max-w-[850px] mx-auto relative z-10 flex flex-col min-h-[90vh]">
-      
-      <!-- ==================== PHASE 1: LEARNING ==================== -->
       <div v-if="currentPhase === 'learning'" class="flex-grow flex flex-col">
-        
-        <!-- Header -->
         <div class="flex items-center justify-between mb-6">
-          <button 
+          <button
             @click="playPopSound(); router.push('/')"
             class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 rounded-[20px] text-gray-500 font-extrabold text-sm hover:scale-105 active:scale-95 transition-all shadow-sm hover:shadow cursor-pointer"
           >
@@ -429,39 +336,46 @@ onUnmounted(() => {
           </button>
           
           <div class="flex items-center gap-3">
-            <h1 class="text-xl md:text-2xl font-extrabold text-[#92cbd6]">Olahraga & Aktivitas</h1>
-            <div class="w-11 h-11 bg-[#b5e3eb] rounded-full flex items-center justify-center border-2 border-white shadow-sm overflow-hidden animate-wiggle">
-              <svg viewBox="0 0 100 100" class="w-8 h-8">
-                <circle cx="50" cy="50" r="25" fill="#ffffff" stroke="#64748b" stroke-width="2" />
-                <polygon points="50,38 56,44 54,51 46,51 44,44" fill="#3b82f6" />
-                <line x1="50" y1="38" x2="50" y2="25" stroke="#64748b" stroke-width="2" />
+            <h1 class="text-xl md:text-2xl font-extrabold text-[#10b981]">
+              {{ selectedModule ? selectedModule.title : 'Tubuhku Luar Biasa' }}
+            </h1>
+            <div class="w-11 h-11 bg-[#d1fae5] rounded-full flex items-center justify-center border-2 border-white shadow-sm overflow-hidden animate-nod">
+              <svg viewBox="0 0 100 100" class="w-9 h-9">
+                <circle cx="50" cy="50" r="28" fill="#fca5a5" />
+                <path d="M 22,38 C 22,18 78,18 78,38 C 65,28 35,28 22,38 Z" fill="#fbbf24" />
+                <path d="M 21,38 C 30,28 45,33 50,42 C 55,33 70,28 79,38" stroke="#d97706" stroke-width="2" fill="none" />
+                <circle cx="40" cy="48" r="3.5" fill="#2563eb" />
+                <circle cx="60" cy="48" r="3.5" fill="#2563eb" />
+                <path d="M 44,59 Q 50,64 56,59" stroke="#be185d" stroke-width="2.5" fill="none" stroke-linecap="round" />
               </svg>
             </div>
           </div>
         </div>
 
-        <!-- Video Player Card Container -->
-        <div class="bg-white border-2 border-[#e0f4f7] rounded-[36px] p-6 md:p-8 shadow-md mb-8 flex flex-col">
+        <div class="bg-white border-2 border-[#f0fdf4] rounded-[36px] p-6 md:p-8 shadow-md mb-8 flex flex-col">
           <div class="flex items-center gap-3 mb-4">
-            <div class="w-12 h-12 bg-[#e0f4f7] rounded-2xl flex items-center justify-center text-xl shadow-inner">
-              ⚽
+            <div class="w-12 h-12 bg-[#d1fae5] rounded-2xl flex items-center justify-center text-xl shadow-inner">
+              💪
             </div>
             <div>
-              <h2 class="text-xl md:text-2xl font-extrabold text-gray-800">Ayo Bergerak Aktif!</h2>
-              <p class="text-xs md:text-sm font-semibold text-gray-500 mt-0.5">Yuk simak video ceria ini untuk belajar pentingnya olahraga bagi tubuh kita!</p>
+              <h2 class="text-xl md:text-2xl font-extrabold text-gray-800">
+                Belajar {{ selectedModule ? selectedModule.title : 'Tubuhku Luar Biasa' }}
+              </h2>
+              <p class="text-xs md:text-sm font-semibold text-gray-500 mt-0.5">
+                Yuk simak video seru di bawah ini untuk belajar tentang {{ selectedModule ? selectedModule.title.toLowerCase() : 'tubuhku luar biasa' }}!
+              </p>
             </div>
           </div>
 
-          <!-- Clickable responsive YouTube Placeholder -->
-          <div class="relative w-full aspect-video rounded-[24px] overflow-hidden border-4 border-white shadow-inner bg-gradient-to-tr from-[#92cbd6]/10 to-[#b5e3eb]/10 flex items-center justify-center">
-            
+          <div class="relative w-full aspect-video rounded-[24px] overflow-hidden border-4 border-white shadow-inner bg-gradient-to-tr from-[#a7f3d0]/10 to-[#f0fdf4]/10 flex items-center justify-center">
             <div v-if="!isVideoPlaying" class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center cursor-pointer group" @click="isVideoPlaying = true; playPopSound()">
-              <!-- Background cover illustration -->
-              <div class="absolute inset-0 bg-cover bg-center opacity-70 group-hover:scale-105 transition-transform duration-500" style="background-image: url('https://img.youtube.com/vi/5m3l3qF8sJg/maxresdefault.jpg')"></div>
+              <div
+                class="absolute inset-0 bg-cover bg-center opacity-70 group-hover:scale-105 transition-transform duration-500"
+                :style="{ backgroundImage: `url('https://img.youtube.com/vi/${getYoutubeId(selectedModule?.videoUrl)}/maxresdefault.jpg')` }"
+              ></div>
               <div class="absolute inset-0 bg-black/30 group-hover:bg-black/25 transition-all duration-300"></div>
               
-              <!-- Play Button overlay -->
-              <button class="relative z-10 w-20 h-20 bg-[#92cbd6] hover:bg-[#7dbcc8] text-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer">
+              <button class="relative z-10 w-20 h-20 bg-[#10b981] hover:bg-[#059669] text-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer">
                 <svg class="w-8 h-8 fill-current ml-1" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
@@ -469,11 +383,11 @@ onUnmounted(() => {
               <span class="relative z-10 text-white font-extrabold text-lg mt-4 bg-black/40 px-4 py-1.5 rounded-full select-none">Putar Video Belajar 🌟</span>
             </div>
 
-            <iframe 
+            <iframe
               v-else
               class="w-full h-full rounded-[24px] border-4 border-white"
-              src="https://www.youtube.com/embed/5m3l3qF8sJg?autoplay=1"
-              title="Lagu Olahraga Ceria"
+              :src="`https://www.youtube.com/embed/${getYoutubeId(selectedModule?.videoUrl)}?autoplay=1`"
+              :title="selectedModule?.title"
               frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowfullscreen
@@ -481,66 +395,18 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Sensory Submodule Interactive Pills (Disembunyikan sementara sesuai permintaan) -->
-        <div v-if="false" class="mb-8">
-          <h3 class="text-lg font-extrabold text-gray-800 mb-4 flex items-center gap-2">
-            <span>✨</span> Sentuh aktivitas di bawah untuk mendengarkan manfaatnya:
-          </h3>
-          
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-            <div 
-              v-for="(fact, idx) in facts" 
-              :key="fact.title"
-              @click="handleFactClick(idx)"
-              class="border-2 rounded-[28px] p-4 flex flex-col items-center text-center cursor-pointer transition-all duration-200 hover:-translate-y-1 active:translate-y-0.5 select-none"
-              :class="[fact.colorClass, activeFactIndex === idx ? fact.activeBg + ' scale-105 border-4' : 'opacity-85 hover:opacity-100 border-dashed']"
-            >
-              <span class="text-3xl mb-2 filter drop-shadow">{{ fact.icon }}</span>
-              <span class="font-extrabold text-base md:text-lg leading-tight">{{ fact.title }}</span>
-            </div>
-          </div>
-
-          <!-- Large Active Speech Bubble Explanation -->
-          <div 
-            v-if="activeFactIndex !== null" 
-            class="bg-white border-2 border-gray-100 rounded-[32px] p-6 shadow-sm flex flex-col md:flex-row items-center gap-6 relative transition-all duration-300 animate-slide-up"
-          >
-            <!-- Dialogue bubble pointer triangle pointing to top -->
-            <div class="absolute -top-3 left-[20%] md:left-[12.5%] xl:left-[12.5%] w-6 h-6 bg-white border-t-2 border-l-2 border-gray-100 rotate-45 pointer-events-none hidden md:block"></div>
-            
-            <div class="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-4xl shadow-inner shrink-0">
-              {{ facts[activeFactIndex].icon }}
-            </div>
-            
-            <div class="flex-grow text-center md:text-left">
-              <h4 class="text-lg font-extrabold text-[#374151]">{{ facts[activeFactIndex].subtitle }}</h4>
-              <p class="text-sm font-semibold text-gray-500 mt-1.5 leading-relaxed">{{ facts[activeFactIndex].description }}</p>
-            </div>
-
-            <button 
-              @click="playPopSound(); speakFact(facts[activeFactIndex].voiceText)"
-              class="px-5 py-3 bg-[#92cbd6] hover:bg-[#7dbcc8] text-white font-extrabold rounded-[20px] flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95 transition-all text-sm shrink-0 cursor-pointer"
-              :class="{'animate-pulse bg-[#22c55e] hover:bg-[#16a34a]': isSpeaking}"
-            >
-              <span>🔊</span> {{ isSpeaking ? 'Mendengar...' : 'Dengar Lagi' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Quiz Navigation Starter Box -->
-        <div class="bg-gradient-to-r from-[#ffe9de] to-[#fff5f0] border-2 border-[#f7945d]/30 rounded-[32px] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm mb-6">
+        <div class="bg-gradient-to-r from-[#f0fdf4] to-[#ecfdf5] border-2 border-[#a7f3d0]/30 rounded-[32px] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm mb-6">
           <div class="flex gap-4 items-start text-center md:text-left flex-col md:flex-row">
-            <div class="w-14 h-14 bg-[#ffd3ba] rounded-2xl flex items-center justify-center text-3xl shadow-sm shrink-0 mx-auto">
+            <div class="w-14 h-14 bg-[#d1fae5] rounded-2xl flex items-center justify-center text-3xl shadow-sm shrink-0 mx-auto">
               📝
             </div>
             <div>
-              <h3 class="text-xl font-extrabold text-[#c45a1f]">Ayo Uji Pengetahuanmu!</h3>
-              <p class="text-xs md:text-sm font-semibold text-[#8a4216] mt-1 leading-relaxed">
-                Sudah mengerti tentang berlari, senam lentur, sepak bola, dan istirahat? <br />
+              <h3 class="text-xl font-extrabold text-[#047857]">Ayo Uji Pengetahuanmu!</h3>
+              <p class="text-xs md:text-sm font-semibold text-[#047857] mt-1 leading-relaxed">
+                Sudah mengerti tentang pelajaran {{ selectedModule ? selectedModule.title : 'ini' }}? <br />
                 Cobalah jawab 5 pertanyaan seru untuk mendapatkan Bintang 3 emas!
               </p>
               
-              <!-- Quick Stats Icons -->
               <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4">
                 <span class="px-3 py-1 bg-[#ffa1b5]/15 border border-[#ffa1b5]/30 text-[#e04f6e] text-xs font-extrabold rounded-full">📑 5 Soal</span>
                 <span class="px-3 py-1 bg-[#92cbd6]/15 border border-[#92cbd6]/30 text-[#2c7d8f] text-xs font-extrabold rounded-full">⏰ 10 Menit</span>
@@ -549,30 +415,24 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <button 
+          <button
             @click="playPopSound(); currentPhase = 'quiz-intro'"
-            class="px-8 py-5 bg-[#f7945d] hover:bg-[#e6834c] text-white font-extrabold text-base md:text-lg rounded-[24px] shadow-lg shadow-[#f7945d]/20 hover:scale-[1.04] active:scale-[0.96] transition-all cursor-pointer whitespace-nowrap"
+            class="px-8 py-5 bg-[#10b981] hover:bg-[#059669] text-white font-extrabold text-base md:text-lg rounded-[24px] shadow-lg shadow-[#10b981]/20 hover:scale-[1.04] active:scale-[0.96] transition-all cursor-pointer whitespace-nowrap"
           >
             Mulai Kuis! 🚀
           </button>
         </div>
-
       </div>
 
-
-      <!-- ==================== PHASE 2: QUIZ INTRO ==================== -->
       <div v-else-if="currentPhase === 'quiz-intro'" class="flex-grow flex flex-col justify-center items-center py-8">
-        
         <div class="w-full max-w-xl bg-white border-2 border-gray-100 rounded-[40px] p-8 shadow-lg flex flex-col text-center">
-          
-          <div class="w-20 h-20 bg-[#eef8fa] border border-[#b5e3eb] rounded-full flex items-center justify-center text-4xl shadow-inner mx-auto mb-6">
+          <div class="w-20 h-20 bg-[#f0fdf4] border border-[#a7f3d0] rounded-full flex items-center justify-center text-4xl shadow-inner mx-auto mb-6">
             💡
           </div>
           
           <h2 class="text-2xl md:text-3xl font-extrabold text-gray-800 mb-2">Tips Mengerjakan Kuis</h2>
           <p class="text-sm font-semibold text-gray-500 mb-6">Agar kamu bisa mendapatkan bintang penuh, ikuti petunjuk di bawah ini ya:</p>
           
-          <!-- Instructions bullet list -->
           <div class="bg-[#fbfaf3] rounded-[24px] p-5 text-left border border-gray-100 mb-8 space-y-3.5">
             <div class="flex items-start gap-3">
               <span class="w-6 h-6 bg-[#ff8c52] text-white rounded-full flex items-center justify-center text-xs font-extrabold mt-0.5">1</span>
@@ -580,7 +440,7 @@ onUnmounted(() => {
             </div>
             <div class="flex items-start gap-3">
               <span class="w-6 h-6 bg-[#70d5c9] text-white rounded-full flex items-center justify-center text-xs font-extrabold mt-0.5">2</span>
-              <p class="text-xs md:text-sm font-bold text-gray-600 leading-relaxed">Pilihlah salah satu dari 4 tombol pilihan jawaban yang menurutmu benar.</p>
+              <p class="text-xs md:text-sm font-bold text-gray-600 leading-relaxed">Pilihlah salah satu dari tombol pilihan jawaban yang menurutmu benar.</p>
             </div>
             <div class="flex items-start gap-3">
               <span class="w-6 h-6 bg-[#ffa1b5] text-white rounded-full flex items-center justify-center text-xs font-extrabold mt-0.5">3</span>
@@ -588,35 +448,27 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Buttons -->
           <div class="grid grid-cols-2 gap-4">
-            <button 
+            <button
               @click="playPopSound(); currentPhase = 'learning'"
               class="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-600 font-extrabold text-base rounded-[20px] transition-all active:scale-95 cursor-pointer"
             >
               Belajar Lagi
             </button>
-            <button 
+            <button
               @click="playPopSound(); currentPhase = 'quiz'; currentQuestionIndex = 0; score = 0"
-              class="w-full py-4 bg-[#92cbd6] hover:bg-[#7dbcc8] text-white font-extrabold text-base rounded-[20px] transition-all hover:scale-105 active:scale-95 shadow-md shadow-[#92cbd6]/15 cursor-pointer"
+              class="w-full py-4 bg-[#10b981] hover:bg-[#059669] text-white font-extrabold text-base rounded-[20px] transition-all hover:scale-105 active:scale-95 shadow-md shadow-[#10b981]/15 cursor-pointer"
             >
               Siap, Mulai! 🚀
             </button>
           </div>
-          
         </div>
-
       </div>
 
-
-      <!-- ==================== PHASE 3: ACTIVE QUIZ ==================== -->
       <div v-else-if="currentPhase === 'quiz'" class="flex-grow flex flex-col">
-        
-        <!-- Header with Owl Mascot & Cancel Button -->
         <div class="flex items-center justify-between mb-5">
           <div class="flex items-center gap-3">
-            <!-- Animated Owl Mascot -->
-            <div class="w-12 h-12 bg-[#b5e3eb] rounded-full flex items-center justify-center border-2 border-white shadow-sm overflow-hidden animate-wiggle">
+            <div class="w-12 h-12 bg-[#d1fae5] rounded-full flex items-center justify-center border-2 border-white shadow-sm overflow-hidden animate-wiggle">
               <svg width="40" height="40" viewBox="0 0 160 160">
                 <rect x="42" y="50" width="76" height="76" rx="38" fill="#a06a50" />
                 <ellipse cx="80" cy="98" rx="22" ry="18" fill="#fecaca" />
@@ -633,10 +485,12 @@ onUnmounted(() => {
               </svg>
             </div>
             
-            <h2 class="text-lg md:text-xl font-extrabold text-gray-700">Kuis: Olahraga & Aktivitas</h2>
+            <h2 class="text-lg md:text-xl font-extrabold text-gray-700">
+              Kuis: {{ selectedModule ? selectedModule.title : 'Tubuhku Luar Biasa' }}
+            </h2>
           </div>
           
-          <button 
+          <button
             @click="playPopSound(); restartModule()"
             class="px-4 py-2 border border-rose-200 bg-rose-50 text-rose-500 font-extrabold text-xs rounded-[16px] transition-all hover:bg-rose-100 active:scale-95 cursor-pointer"
           >
@@ -644,25 +498,38 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <!-- Progress Bar Indicator -->
         <div class="mb-6 bg-white border-2 border-gray-100 rounded-[24px] p-4 shadow-sm">
           <div class="flex justify-between items-center mb-2 font-bold text-xs md:text-sm text-gray-500">
             <span>Progress Kuis</span>
-            <span class="text-[#92cbd6]">Pertanyaan {{ currentQuestionIndex + 1 }} dari 5</span>
+            <span class="text-[#10b981]">Pertanyaan {{ currentQuestionIndex + 1 }} dari 5</span>
           </div>
           
           <div class="w-full h-4 bg-gray-100 rounded-full overflow-hidden border border-gray-200/50 p-0.5">
-            <div 
-              class="h-full bg-gradient-to-r from-[#92cbd6] to-[#7dbcc8] rounded-full transition-all duration-500 ease-out"
+            <div
+              class="h-full bg-gradient-to-r from-[#10b981] to-[#059669] rounded-full transition-all duration-500 ease-out"
               :style="{ width: `${((currentQuestionIndex + 1) / 5) * 100}%` }"
             ></div>
           </div>
         </div>
 
-        <!-- Main Question Card Container -->
         <div class="bg-white border-2 border-gray-100 rounded-[36px] p-6 md:p-8 shadow-sm flex-grow flex flex-col justify-center mb-6">
+          <div v-if="questions[currentQuestionIndex].tag" class="mb-4 self-start">
+            <span class="px-4 py-1.5 bg-[#f2f1e8] text-[#8c8873] text-xs font-bold uppercase rounded-full tracking-wider">
+              {{ questions[currentQuestionIndex].tag }}
+            </span>
+          </div>
+
+          <div v-if="questions[currentQuestionIndex].visualEmoji" class="w-full bg-white border border-gray-200 rounded-[24px] p-5 mb-6 flex flex-col items-center justify-center text-center shadow-sm">
+            <div class="text-5xl mb-3 filter drop-shadow">
+              {{ questions[currentQuestionIndex].visualEmoji }}
+            </div>
+            <div class="text-sm font-semibold text-gray-500 italic leading-relaxed">
+              {{ questions[currentQuestionIndex].visualDescription }}
+            </div>
+          </div>
+
           <div class="flex gap-4 items-start mb-6">
-            <div class="w-12 h-12 bg-[#92cbd6] text-white rounded-full flex items-center justify-center text-xl font-extrabold shrink-0 shadow-md">
+            <div class="w-12 h-12 bg-[#10b981] text-white rounded-full flex items-center justify-center text-xl font-extrabold shrink-0 shadow-md">
               {{ currentQuestionIndex + 1 }}
             </div>
             <h3 class="text-xl md:text-2xl font-extrabold text-gray-800 leading-snug mt-1">
@@ -670,26 +537,20 @@ onUnmounted(() => {
             </h3>
           </div>
 
-          <!-- Multiple choice grid options -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-2">
-            <button 
-              v-for="opt in questions[currentQuestionIndex].options" 
+            <button
+              v-for="opt in questions[currentQuestionIndex].options"
               :key="opt.key"
               @click="handleOptionSelect(opt.key, $event)"
               class="border-2 rounded-[24px] p-5 text-left font-bold text-base md:text-lg flex items-center gap-4 transition-all duration-200 select-none cursor-pointer text-gray-800"
               :class="[
-                // Default options classes
-                !isAnswered ? 'border-gray-200 bg-white hover:border-[#92cbd6] hover:bg-[#eef8fa]/20 hover:-translate-y-0.5 shadow-sm active:translate-y-0.5 text-gray-800' : '',
-                // Selected option correct classes
+                !isAnswered ? 'border-gray-200 bg-white hover:border-[#10b981] hover:bg-[#f0fdf4]/20 hover:-translate-y-0.5 shadow-sm active:translate-y-0.5 text-gray-800' : '',
                 isAnswered && opt.key === questions[currentQuestionIndex].correct ? 'border-green-500 bg-green-50 text-green-700 shadow-md ring-2 ring-green-300' : '',
-                // Selected option incorrect classes
                 isAnswered && selectedOption === opt.key && opt.key !== questions[currentQuestionIndex].correct ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-md ring-2 ring-rose-300' : '',
-                // Other options classes when answered
                 isAnswered && opt.key !== questions[currentQuestionIndex].correct && selectedOption !== opt.key ? 'border-gray-150 bg-gray-50/50 text-gray-400 opacity-60' : ''
               ]"
             >
-              <!-- Option Badge letter -->
-              <span 
+              <span
                 class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-extrabold shrink-0 shadow-inner"
                 :class="[
                   !isAnswered ? 'bg-[#fbfaf3] text-gray-500 border border-gray-200' : '',
@@ -698,7 +559,6 @@ onUnmounted(() => {
                   isAnswered && opt.key !== questions[currentQuestionIndex].correct && selectedOption !== opt.key ? 'bg-gray-200 text-gray-400' : ''
                 ]"
               >
-                <!-- Checkmark/crossmark replacement on select -->
                 <span v-if="isAnswered && opt.key === questions[currentQuestionIndex].correct">✓</span>
                 <span v-else-if="isAnswered && selectedOption === opt.key && opt.key !== questions[currentQuestionIndex].correct">✗</span>
                 <span v-else>{{ opt.key }}</span>
@@ -709,9 +569,8 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Correct/Incorrect Overlay Success banners at bottom -->
-        <div 
-          v-if="isAnswered" 
+        <div
+          v-if="isAnswered"
           class="rounded-[32px] p-5 md:p-6 border-2 shadow-sm animate-slide-up flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-300"
           :class="[
             isCorrect ? 'bg-green-50 border-green-200 text-green-800' : 'bg-rose-50 border-rose-200 text-rose-800'
@@ -731,30 +590,23 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <button 
+          <button
             @click="handleNextQuestion"
-            class="px-6 py-4 bg-[#92cbd6] hover:bg-[#7dbcc8] text-white font-extrabold text-sm md:text-base rounded-[20px] transition-all hover:scale-105 active:scale-95 shadow-md flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 border border-[#b5e3eb]"
+            class="px-6 py-4 bg-[#10b981] hover:bg-[#059669] text-white font-extrabold text-sm md:text-base rounded-[20px] transition-all hover:scale-105 active:scale-95 shadow-md flex items-center gap-1 cursor-pointer whitespace-nowrap shrink-0 border border-emerald-300"
           >
             Lanjut Pertanyaan →
           </button>
         </div>
-
       </div>
 
-
-      <!-- ==================== PHASE 4: CELEBRATION ==================== -->
       <div v-else-if="currentPhase === 'celebration'" class="flex-grow flex flex-col justify-center items-center py-6">
-        
         <div class="w-full max-w-xl bg-white border-2 border-gray-100 rounded-[44px] p-8 md:p-10 shadow-xl text-center relative overflow-hidden flex flex-col">
-          
-          <!-- Background celebration sparkle circle -->
-          <div class="absolute w-64 h-64 bg-[#92cbd6]/10 rounded-full opacity-30 blur-[2px] -top-10 -left-10 pointer-events-none"></div>
+          <div class="absolute w-64 h-64 bg-[#10b981]/10 rounded-full opacity-30 blur-[2px] -top-10 -left-10 pointer-events-none"></div>
           <div class="absolute w-64 h-64 bg-[#ffa1b5]/10 rounded-full opacity-30 blur-[2px] -bottom-10 -right-10 pointer-events-none"></div>
 
-          <!-- Cheerful Mascot celebration -->
-          <div class="w-28 h-28 bg-[#eef8fa] border-2 border-[#b5e3eb] rounded-full flex items-center justify-center shadow-lg mx-auto mb-6 overflow-hidden animate-bounce">
+          <div class="w-28 h-28 bg-[#f5f9f8] border-2 border-[#10b981]/40 rounded-full flex items-center justify-center shadow-lg mx-auto mb-6 overflow-hidden animate-bounce">
             <svg width="88" height="88" viewBox="0 0 160 160">
-              <polygon points="80,10 60,48 100,48" fill="#92cbd6" />
+              <polygon points="80,10 60,48 100,48" fill="#ffa1b5" />
               <circle cx="80" cy="8" r="4.5" fill="#fbc72b" />
               <rect x="42" y="50" width="76" height="76" rx="38" fill="#a06a50" />
               <ellipse cx="80" cy="98" rx="22" ry="18" fill="#fecaca" />
@@ -769,12 +621,11 @@ onUnmounted(() => {
           </div>
 
           <h2 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-1 leading-tight select-none">Hore! Kuis Selesai!</h2>
-          <p class="text-sm font-semibold text-gray-500 mb-6">Kamu telah menyelesaikan kuis Olahraga & Aktivitas.</p>
+          <p class="text-sm font-semibold text-gray-500 mb-6">Kamu telah menyelesaikan kuis {{ selectedModule ? selectedModule.title : 'Tubuhku Luar Biasa' }}.</p>
 
-          <!-- Golden stars rating area -->
           <div class="flex items-center justify-center gap-4 mb-6">
-            <span 
-              v-for="(star, index) in [0, 1, 2]" 
+            <span
+              v-for="(star, index) in [0, 1, 2]"
               :key="index"
               class="text-5xl md:text-6xl transition-all duration-500 ease-out select-none filter drop-shadow"
               :class="[
@@ -786,51 +637,44 @@ onUnmounted(() => {
             </span>
           </div>
 
-          <!-- Score Card Container -->
-          <div class="bg-[#fbfaf3] rounded-[28px] border-2 border-dashed border-[#92cbd6]/50 p-5 mb-8 max-w-sm mx-auto w-full">
-            <span class="text-xs font-extrabold uppercase text-[#2c7d8f] tracking-wider">Hasil Akhir</span>
+          <div class="bg-[#fbfaf3] rounded-[28px] border-2 border-dashed border-[#10b981]/50 p-5 mb-8 max-w-sm mx-auto w-full">
+            <span class="text-xs font-extrabold uppercase text-[#047857] tracking-wider">Hasil Akhir</span>
             <div class="text-4xl font-extrabold text-gray-800 mt-1 select-none">
               {{ score }} <span class="text-gray-400 text-2xl font-bold">/ 5</span>
             </div>
             <p class="text-xs md:text-sm font-bold text-[#556b69] mt-2 leading-relaxed">
-              <span v-if="score === 5">Luar Biasa! Kamu adalah Bintang Olahraga Ceria! 🌟🏆</span>
-              <span v-else-if="score >= 3">Hebat! Kamu sudah memahami aktivitas tubuhmu dengan baik! 🎉</span>
+              <span v-if="score === 5">Luar Biasa! Kamu menjawab semua dengan benar! 🌟🏆</span>
+              <span v-else-if="score >= 3">Hebat! Kamu sudah memahami pelajaran ini dengan baik! 🎉</span>
               <span v-else-if="score >= 1">Bagus! Terus belajar ya, kamu pasti bisa lebih hebat lagi! 💪</span>
               <span v-else>Jangan menyerah! Ayo tonton videonya lagi dan coba kuisnya lagi! 💖</span>
             </p>
           </div>
 
-          <!-- Action buttons -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button 
-              @click="restartModule"
-              class="w-full py-4 border-2 border-[#92cbd6] hover:bg-[#92cbd6]/10 text-[#2c7d8f] font-extrabold text-base rounded-[20px] transition-all active:scale-95 cursor-pointer"
+            <button
+              @click="restartQuiz"
+              class="w-full py-4 border-2 border-[#10b981] hover:bg-[#10b981]/10 text-[#047857] font-extrabold text-base rounded-[20px] transition-all active:scale-95 cursor-pointer"
             >
               Ulangi Kuis 🔄
             </button>
-            <button 
-              @click="playPopSound(); router.push('/')"
-              class="w-full py-4 bg-[#92cbd6] hover:bg-[#7dbcc8] text-white font-extrabold text-base rounded-[20px] transition-all hover:scale-105 active:scale-95 shadow-md shadow-[#92cbd6]/20 cursor-pointer"
+            <button
+              @click="restartModule"
+              class="w-full py-4 bg-[#10b981] hover:bg-[#059669] text-white font-extrabold text-base rounded-[20px] transition-all hover:scale-105 active:scale-95 shadow-md shadow-[#10b981]/20 cursor-pointer"
             >
-              Kembali ke Beranda 🏠
+              Pilih Topik Lain 📚
             </button>
           </div>
-
         </div>
-
       </div>
-
     </div>
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 .font-outfit {
   font-family: 'Outfit', sans-serif;
 }
 
-/* Custom micro-animations */
 @keyframes slide-up {
   0% { transform: translateY(20px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }

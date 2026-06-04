@@ -445,7 +445,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 
 .slide-fade-enter-active {
   transition: all 0.3s ease-out;

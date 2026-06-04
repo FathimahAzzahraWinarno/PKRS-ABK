@@ -83,13 +83,10 @@ const playPopSound = () => {
 </template>
 
 <style scoped>
-/* Scoped custom helper transitions */
 .nav-item {
   cursor: pointer;
 }
 
-/* Custom font loading integration */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 .font-outfit {
   font-family: 'Outfit', sans-serif;
 }

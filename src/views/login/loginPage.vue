@@ -645,8 +645,6 @@ const showHelp = () => {
   transform: scale(1.02);
 }
 
-/* Custom fonts styling fallback */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 .font-outfit {
   font-family: 'Outfit', sans-serif;
 }
