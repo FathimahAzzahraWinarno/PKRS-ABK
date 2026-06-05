@@ -15,6 +15,8 @@ const currentView = ref('dashboard') // 'dashboard' | 'users'
 const activeTab = ref('approved')    // 'approved' | 'pending'
 const isSidebarExpanded = ref(false) // For mobile collapse
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
 // Data States
 const isLoading = ref(true)
 const errorMessage = ref('')
@@ -99,7 +101,7 @@ const playErrorSound = () => {
 const fetchStats = async () => {
   const token = localStorage.getItem('token')
   try {
-    const response = await axios.get('http://localhost:3000/api/users/stats', {
+    const response = await axios.get(`${API_URL}/api/users/stats`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     stats.value = response.data
@@ -112,7 +114,7 @@ const fetchStats = async () => {
 const fetchLatestPending = async () => {
   const token = localStorage.getItem('token')
   try {
-    const response = await axios.get('http://localhost:3000/api/users/pending?limit=3', {
+    const response = await axios.get(`${API_URL}/api/users/pending?limit=3`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     latestPending.value = response.data.users
@@ -125,7 +127,7 @@ const fetchLatestPending = async () => {
 const fetchAllUsers = async () => {
   const token = localStorage.getItem('token')
   try {
-    const response = await axios.get('http://localhost:3000/api/users', {
+    const response = await axios.get(`${API_URL}/api/users`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     allUsersList.value = response.data.users
@@ -164,7 +166,7 @@ const handleApprove = async (id, nameOrUsername) => {
   const token = localStorage.getItem('token')
 
   try {
-    await axios.patch(`http://localhost:3000/api/users/${id}/approve`, {}, {
+    await axios.patch(`${API_URL}/api/users/${id}/approve`, {}, {
       headers: { Authorization: `Bearer ${token}` }
     })
 
@@ -192,7 +194,7 @@ const handleReject = async (id, nameOrUsername) => {
   const token = localStorage.getItem('token')
 
   try {
-    await axios.patch(`http://localhost:3000/api/users/${id}/reject`, {}, {
+    await axios.patch(`${API_URL}/api/users/${id}/reject`, {}, {
       headers: { Authorization: `Bearer ${token}` }
     })
 
@@ -220,7 +222,7 @@ const handleResetPassword = async (userId, username, newPassword) => {
   isPasswordSaving.value[userId] = true
 
   try {
-    await axios.patch(`http://localhost:3000/api/users/${userId}/password`, {
+    await axios.patch(`${API_URL}/api/users/${userId}/password`, {
       password: newPassword
     }, {
       headers: { Authorization: `Bearer ${token}` }

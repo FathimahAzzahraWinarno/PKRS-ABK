@@ -12,6 +12,8 @@ const router = useRouter()
 const isPending = ref(false)
 const pendingMessage = ref('')
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
 // Form states
 const isRegisterMode = ref(false)
 const nama = ref('')
@@ -202,7 +204,7 @@ const handleLogin = async () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/register', {
+      const response = await axios.post(`${API_URL}/api/auth/register`, {
         nama: nama.value,
         username: username.value,
         password: password.value
@@ -232,7 +234,7 @@ const handleLogin = async () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/login', {
+      const response = await axios.post(`${API_URL}/api/auth/login`, {
         username: username.value,
         password: password.value
       })
