@@ -23,4 +23,8 @@ app.get('/', (req, res) => {
   res.json({ message: 'Server PKRS-ABK berjalan!' })
 })
 
-app.listen(PORT)
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT)
+}
+
+export default app
