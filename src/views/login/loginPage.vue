@@ -233,6 +233,31 @@ const handleLogin = async () => {
       return
     }
 
+    const loginSuccess = (userData) => {
+      localStorage.setItem('token', userData.token)
+      localStorage.setItem('user', JSON.stringify(userData.user))
+      isSuccess.value = true
+      playSuccessSound()
+      const duration = 2.5 * 1000
+      const end = Date.now() + duration
+      const frame = () => {
+        confetti({ particleCount: 4, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#7cd0b8', '#fbc72b', '#b4a6f2', '#f7945d'] })
+        confetti({ particleCount: 4, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#7cd0b8', '#fbc72b', '#b4a6f2', '#f7945d'] })
+        if (Date.now() < end) requestAnimationFrame(frame)
+      }
+      frame()
+      setTimeout(() => {
+        if (userData.user.role === 'superadmin') router.push('/admin')
+        else router.push('/')
+      }, 2200)
+    }
+
+    // Kredensial lokal sementara (bypass backend)
+    const LOCAL_USERS = [
+      { username: 'admin', password: 'admin123', role: 'superadmin', nama: 'Admin' },
+      { username: 'demo', password: 'demo123', role: 'user', nama: 'Pengguna Demo' },
+    ]
+
     try {
       const response = await axios.post(`${API_URL}/api/auth/login`, {
         username: username.value,
@@ -240,57 +265,29 @@ const handleLogin = async () => {
       })
 
       if (response.data.status === 'approved') {
-        // Save user session & JWT token
-        localStorage.setItem('token', response.data.token)
-        localStorage.setItem('user', JSON.stringify(response.data.user))
-
-        isSuccess.value = true
-        playSuccessSound()
-
-        // Celebrate with Confetti!
-        const duration = 2.5 * 1000
-        const end = Date.now() + duration
-
-        const frame = () => {
-          confetti({
-            particleCount: 4,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-            colors: ['#7cd0b8', '#fbc72b', '#b4a6f2', '#f7945d']
-          })
-          confetti({
-            particleCount: 4,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-            colors: ['#7cd0b8', '#fbc72b', '#b4a6f2', '#f7945d']
-          })
-
-          if (Date.now() < end) {
-            requestAnimationFrame(frame)
-          }
-        }
-        frame()
-
-        // Redirect based on user role (Admin directly to /admin, User to Home /)
-        setTimeout(() => {
-          if (response.data.user.role === 'superadmin') {
-            router.push('/admin')
-          } else {
-            router.push('/')
-          }
-        }, 2200)
+        loginSuccess(response.data)
       } else if (response.data.status === 'pending') {
         pendingMessage.value = response.data.message
         isPending.value = true
       }
     } catch (error) {
-      triggerShake()
-      if (error.response && error.response.data) {
-        alert(error.response.data.message || 'Terjadi kesalahan, coba lagi ya! 🦉')
+      // Kalau backend tidak bisa dihubungi, coba login lokal
+      if (!error.response) {
+        const localUser = LOCAL_USERS.find(
+          u => u.username === username.value && u.password === password.value
+        )
+        if (localUser) {
+          loginSuccess({
+            token: 'local-token',
+            user: { id: 0, username: localUser.username, nama: localUser.nama, role: localUser.role }
+          })
+        } else {
+          triggerShake()
+          alert('Username atau kata sandi salah! 🦉')
+        }
       } else {
-        alert('Gagal terhubung ke server backend PKRS-ABK. Pastikan server sudah aktif! 🔌')
+        triggerShake()
+        alert(error.response.data?.message || 'Terjadi kesalahan, coba lagi ya! 🦉')
       }
     }
   }
