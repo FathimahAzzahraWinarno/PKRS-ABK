@@ -15,7 +15,7 @@ const currentView = ref('dashboard') // 'dashboard' | 'users'
 const activeTab = ref('approved')    // 'approved' | 'pending'
 const isSidebarExpanded = ref(false) // For mobile collapse
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+const API_URL = ''
 
 // Data States
 const isLoading = ref(true)
