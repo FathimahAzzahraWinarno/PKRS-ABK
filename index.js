@@ -32,7 +32,8 @@ app.get('/', (req, res) => {
 // Melayani file frontend (Web)
 app.use(express.static(path.join(__dirname, 'public')))
 
-app.get('*', (req, res) => {
+app.use((req, res, next) => {
+  if (req.method !== 'GET') return next()
   if (req.originalUrl.startsWith('/api')) {
     return res.status(404).json({ message: 'API Route Not Found' })
   }
