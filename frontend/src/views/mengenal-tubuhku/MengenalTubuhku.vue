@@ -8,7 +8,6 @@ const router = useRouter()
 const currentPhase = ref('learning')
 const selectedModule = ref({
   id: 'd7',
-  code: 'MODUL D7',
   title: 'Tubuhku, Aturanku',
   subtext: 'Video + 5 soal kuis · ±4 menit',
   icon: '🔒',
@@ -58,29 +57,13 @@ const playNote = (freq, type = 'sine', duration = 0.3) => {
 }
 
 const playCorrectSound = () => {
-  const notes = [261.63, 329.63, 392.00, 523.25]
-  notes.forEach((freq, idx) => {
-    setTimeout(() => {
-      playNote(freq, 'sine', 0.4)
-    }, idx * 100)
-  })
+  const audio = new Audio('/assets/audio/3.m4a.mp4')
+  audio.play().catch(e => console.log('Audio error:', e))
 }
 
 const playIncorrectSound = () => {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)()
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.type = 'triangle'
-    osc.frequency.setValueAtTime(140, ctx.currentTime)
-    osc.frequency.linearRampToValueAtTime(90, ctx.currentTime + 0.4)
-    gain.gain.setValueAtTime(0.2, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
-    osc.start()
-    osc.stop(ctx.currentTime + 0.4)
-  } catch (e) {}
+  const audio = new Audio('/assets/audio/s3.m4a.mp4')
+  audio.play().catch(e => console.log('Audio error:', e))
 }
 
 const playVictorySound = () => {

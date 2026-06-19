@@ -289,9 +289,7 @@ const handleLogout = () => {
                 {{ mod.icon }}
               </div>
               <div class="text-left font-outfit">
-                <span class="text-xs font-bold tracking-wide block mb-0.5" :class="[mod.textColor]">
-                  {{ mod.code }}
-                </span>
+
                 <h3 class="text-lg md:text-xl font-extrabold text-gray-800 leading-snug">
                   {{ mod.title }}
                 </h3>
