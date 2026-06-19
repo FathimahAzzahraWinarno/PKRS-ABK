@@ -25,10 +25,6 @@ app.use(express.json())
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Server PKRS-ABK berjalan!' })
-})
-
 // Melayani file frontend (Web)
 app.use(express.static(path.join(__dirname, 'public')))
 
