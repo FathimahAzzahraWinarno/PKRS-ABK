@@ -17,7 +17,7 @@ const selectedModule = ref({
   iconColor: 'bg-[#d1fae5] text-[#10b981]',
   textColor: 'text-[#10b981]',
   accentColor: '#5dc1b9',
-  videoUrl: 'https://www.youtube.com/embed/g72D_1vLg6Y'
+  videoUrl: 'https://www.youtube.com/embed/TyOcYJo8iSo'
 })
 const isVideoPlaying = ref(false)
 const activeFactIndex = ref(0)
